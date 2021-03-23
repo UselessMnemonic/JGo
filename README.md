@@ -1,4 +1,9 @@
 # JGo
+Welcome to JGo, my pet project to bring Go to the JVM! This repo is a running history of my
+research and progress. I'm inspired by Kotlin, which shares a lot of similarities to Go and serves
+as a proof that many of their similar constructs can work with Java. In the future, an adaptation
+of this project will also have its basis in Kotlin.
+
 ## Mapping Go to Java
 ### Calling Conventions
 In Java, primitives (like `int`, `double`, and `ref`) are passed into functions by their
@@ -32,7 +37,13 @@ public class Reference<T> {
 It contains constructors for referencing the fields of `structs`, indexed values of `slices` and
 `arrays`, or independent values.
 
+### Structs
+TODO
+
 ### Functions
+TODO
+
+#### Multiple Return
 TODO
 
 ### Method Sets
