@@ -38,6 +38,47 @@ It contains constructors for referencing the fields of `structs`, indexed values
 `arrays`, or independent values.
 
 ### Defined Types
+Defined types in Go become their own types in Java:
+```
++---------------+--------------+
+|      GO       |    JAVA      |
++---------------+--------------+
+|               |              |
+| (u)int8       | byte         |
+|               |              |
+| (u)int16      | short        |
+|               |              |
+| (u)int32      | int          |
+|               |              |
+| (u)int64      | long         |
+|               |              |
+| float32       | float        |
+|               |              |
+| float64       | double       |
+|               |              |
+| (*)complex64  | Complex64    |
+|               |              |
+| (*)complex128 | Complex128   |
+|               |              |
+| *(u)int8      | (U)Int8      |
+|               |              |
+| *(u)int16     | (U)Int16     |
+|               |              |
+| *(u)int32     | (U)Int32     |
+|               |              |
+| *(u)int64     | (U)Int64     |
+|               |              |
+| *float32      | Float32      |
+|               |              |
+| *float64      | Float64      |
+|               |              |
+| **T           | Reference<T> |
++---------------+--------------+
+```
+When a type definition is created from any Go type, its corresponding Java class gains a
+deep-copy-constructor, a constructor that accepts the base type, and a method that generates a new
+instance of the base type. In some cases, a local primitive will be promoted to its corresponding
+object type.
 
 ### Structs
 Structs in Go become independent classes in Java. So, a Go struct declared like this:
@@ -260,10 +301,17 @@ handling. Internally, `recover()` translates into a `try-catch` block that captu
 
 ## Concurrency
 ### Channels
-TODO
+Channels are powerful tools in Go, allowing for the sharing of memory by communicating. A channel's
+type comprises an element type, and a direction of data flow. A channel can be input-only
+(`chan T<-`), output-only (`<-chan T`), or bi-directional (`chan T`).
+
+In Java, the channel is represented by an abstract `Channel<T>` class. It can be input-only
+(`Channel<? super T>`), output-only (`Channel<? extends T>`), or bi-directional (`Channel<T>`). The
+bounds in this case help differentiate between channel types.
 
 #### Buffered Channels
-TODO
+A buffered channel has a limited capacity for elements. If empty, an attempt to receive from the
+channel will block. If full, an attempt to send to the channel will block.
 
 #### Range, Close, and Select
 TODO
