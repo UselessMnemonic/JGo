@@ -167,7 +167,14 @@ String doSomething(int arg1, int arg2)
 Go allows functions to return multiple values at once, but Java does not. To remedy this, functions
 that return multiple values instead return a `Tuple`. The `Tuple` is an abstract class, whose
 children are any of `Couple`, `Triple`, and so on up to `Septuple` and the general-purpose
-`NTuple`.
+`NTuple`. They are immutable POJOs. Here is an example:
+```golang
+func returnSeveral() (a long, b int)
+```
+Now here is the Java equivalent:
+```java
+Couple<Long, Integer> returnSeveral()
+```
 
 #### Anonymous Functions
 Go also allows anonymous for functions, which don't have their own names and typically have limited
@@ -182,7 +189,7 @@ interface. The method set of any other type `T` consists of all methods declared
 A Java class representing `T` can have instance methods that reflect those in `T`. Instance methods
 can be defined on `T` (or `*T` provided `T` itself is not a pointer type) if those methods are
 defined in the same package as `T`. Therefore, `Reference` instances cannot have methods, nor can
-base types like `int` or `complex`.
+base types like `int` or `complex64`.
 
 ### Interfaces
 In Go, an interface type specifies a method set, called its _interface_. Any type that implements
@@ -221,7 +228,7 @@ Functions defined in a Go file become static methods in its corresponding Java c
 following is in `example.go`:
 ```golang
 func Square(x int) int
-func sqrt(x float) float
+func sqrt(x float32) float32
 ```
 then the following becomes part of `ExampleGo.java`
 ```java
@@ -298,6 +305,9 @@ capture the value given to `panic()` and resume normal execution.
 Recovery is not a facility exposed to Java users, like `defer` and `panic()` before it. Instead,
 exceptions caused by panics must be caught by the user using Java, allowing for traditional error
 handling. Internally, `recover()` translates into a `try-catch` block that captures the exception.
+
+### Errors
+TODO
 
 ## Concurrency
 ### Channels
