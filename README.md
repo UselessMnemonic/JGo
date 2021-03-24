@@ -280,20 +280,20 @@ It is customary in Java to handle errors by throwing exceptions, but Go prefers 
 of function returns. However, some functions that do encounter errors invoke the `panic()` function,
 a built-in function that stops the ordinary flow of control and begins panicking.
 
-When a function `F` calls panic, execution of `F` stops, any deferred statements in `F` are executed
-normally, and then `F` returns to its caller. To the caller, F now behaves like a call to `panic().`
-The process continues up the stack until all functions in the current goroutine have returned, at
-which point the program crashes.
+When a function `F` calls `panic()`, execution of `F` stops, any deferred statements in `F` are
+executed normally, and then `F` returns to its caller. To the caller, `F` now behaves like a call to
+`panic()`. The process continues up the stack until all functions in the current goroutine have
+returned, at which point the program crashes.
 
 Panics translate into runtime exceptions in Java, avoiding the need to declare them in method
 declarations. This allows errors to propagate through threads and eventually the JVM, much like
 panics.
 
 #### Recover
-`recover()` is a built-in function that regains control of a panicking goroutine. Recover is only
-useful inside deferred functions. During normal execution, a call to recover will return `nil` and
-have no other effect. If the current goroutine is panicking, a call to `recover()` will capture the
-value given to `panic()` and resume normal execution.
+`recover()` is a built-in function that regains control of a panicking goroutine. `recover()` is
+only useful inside deferred functions. During normal execution, a call to `recover()` will return
+`nil` and have no other effect. If the current goroutine is panicking, a call to `recover()` will
+capture the value given to `panic()` and resume normal execution.
 
 Recovery is not a facility exposed to Java users, like `defer` and `panic()` before it. Instead,
 exceptions caused by panics must be caught by the user using Java, allowing for traditional error
@@ -303,7 +303,7 @@ handling. Internally, `recover()` translates into a `try-catch` block that captu
 ### Channels
 Channels are powerful tools in Go, allowing for the sharing of memory by communicating. A channel's
 type comprises an element type, and a direction of data flow. A channel can be input-only
-(`chan T<-`), output-only (`<-chan T`), or bi-directional (`chan T`).
+(`chan<- T`), output-only (`<-chan T`), or bi-directional (`chan T`).
 
 In Java, the channel is represented by an abstract `Channel<T>` class. It can be input-only
 (`Channel<? super T>`), output-only (`Channel<? extends T>`), or bi-directional (`Channel<T>`). The
