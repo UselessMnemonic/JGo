@@ -1,72 +1,105 @@
 # JGo
-Welcome to JGo, my pet project to bring Go to the JVM! This repo is a running history of my
+Welcome to JGo, my pet project for bring Go to the JVM! This repo is a running history of my
 research and progress. I'm inspired by Kotlin, which shares a lot of similarities to Go and serves
 as a proof that many of their similar constructs can work with Java. In the future, an adaptation
-of this project will also have its basis in Kotlin.
+of this project will have its basis in Kotlin.
 
 ## Mapping Go to Java
 ### Calling Conventions
 In Java, primitives (like `int`, `double`, and `ref`) are passed into functions by their
-values alone; this makes them pass-by-value. Objects themselves (meaning the data comprising an
-object) are always passed by their references, so objects in Java are _always_ pass-by-reference.
+values alone; this makes them pass-by-value. Java objects (meaning the data comprising object types)
+are passed by their references, so objects in Java are _always_ pass-by-reference.
 
-In Go (much like in C), all data is by-default pass-by-value. The data comprising a `struct`, for
-instance, is copied entirely when passed into a function. There are some exceptions with constructs
-like maps and slices; still, any value can be pass-by-reference by using a pointer to that value.
+In Go, only maps, and channels are pass-by-reference. Other types like arrays and structs are
+pass-by-value. Even pointers are pass-by-value, though the data to which they point can then be used
+as pass-by-reference.
 
-#### Java Conventions
+#### The Pointer Class
+We introduce a new class called `Pointer` that will work for all orders of references.
+It exposes constructors for referencing the fields of `structs`, indexed values of `slices` and
+`arrays`, and variables declared in functions.
+
+#### Simulating Go Conventions
 Java objects can emulate pass-by-value via cloning, so that a new object is constructed when a
-distinct copy is needed. Such clones must be deep copies, but this can only be practically
-guaranteed when a Go type is translated to Java.
+distinct copy is needed. Such clones must be deep copies.
 
-It is not so trivial, however, to emulate pass-by-reference in Java. Pointers in Go can be made from
-most types, wherever data may be legally addressed. Java requires some mechanism by which fields,
-indexed memory, and local variables alike can be made accessible by a reference. In some cases,
-first-order references to an object can be satisfied by its reference value allowing us to use Java
-objects normally.
+Pass-by-reference, on the other hand, can be achieved by treating all variables in Go as objects.
+That is, the same object is used to get and set values for its corresponding variable. Take this
+example:
 
-#### The Reference Class
-We introduce a new class called `Reference` that will work for all orders of references. It is
-declared as follows:
-```java
-public abstract class Reference<T> {
-    T get();
-    set(T referent);
-}
+```golang
+var a Int
+var b Int = 1
+a = 5
+c := a + b
+ptr := &c;
 ```
-It contains constructors for referencing the fields of `structs`, indexed values of `slices` and
-`arrays`, or independent values. There are also special classes like `IntReference` for use with
-references to primitive values.
+```java
+Int a = new Int();
+Int b = new Int(1);
+a.set(5);
+Int c = a.add(b)
+Pointer<Int> ptr = new Pointer<Int>(c);
+```
+This forces the objects to be used to the end of their scopes, which helps limit some loss of
+efficiency. Furthermore, it allows references to maintain cohesion with the variables to which they
+point.
 
 ### Defined Types
 Defined types in Go become their own types in Java:
 ```
-+---------------+--------------+
-|      GO       |    JAVA      |
-+---------------+--------------+
-|               |              |
-| [*](u)int8    | (U)Int8      |
-|               |              |
-| [*](u)int16   | (U)Int16     |
-|               |              |
-| [*](u)int32   | (U)Int32     |
-|               |              |
-| [*](u)int64   | (U)Int64     |
-|               |              |
-| [*]float32    | Float32      |
-|               |              |
-| [*]float64    | Float64      |
-|               |              |
-| [*]complex64  | Complex64    |
-|               |              |
-| [*]complex128 | Complex128   |
-|               |              |
-| **T           | Reference<T> |
-+---------------+--------------+
++------------+------------+
+|     GO     |    JAVA    |
++------------+------------+
+|            |            |
+| (u)int8    | (U)Int8    |
+|            |            |
+| (u)int16   | (U)Int16   |
+|            |            |
+| (u)int32   | (U)Int32   |
+|            |            |
+| (u)int64   | (U)Int64   |
+|            |            |
+| float32    | Float32    |
+|            |            |
+| float64    | Float64    |
+|            |            |
+| complex64  | Complex64  |
+|            |            |
+| complex128 | Complex128 |
+|            |            |
+| bool       | Bool       |
+|            |            |
+| string     | String     |
+|            |            |
+| [n]T       | Array<T>   |
+|            |            |
+| []T        | Slice<T>   |
+|            |            |
+| map[K]V    | Map<K,V>   |
+|            |            |
+| chan T     | Channel<T> |
+|            |            |
+| *T         | Pointer<T> |
++------------+------------+
 ```
+...where `String` and `Map` are standard Java classes.
+
 When a type definition is created from any of these types, its corresponding Java class gains a
 deep-copy-constructor, a constructor that accepts the underlying type, and a method that generates a
 new instance of the base type.
+
+### Nil and Default Values
+Go assigns default values to variables lacking an assignment. For value types like integers, the
+default value is `0`. For reference types, like slices or pointers, the default value is `nil`.
+
+`nil` is special in that it is typed, unlike in Java or C. A `nil` value is unique to its particular
+type. A `nil` slice has 0 length and 0 capacity, and a `nil` pointer does not point to anything.
+`nil` variables are quite like `null` Java variables, and a `nil` variable translated to Java will
+not necessarily be null.
+
+To test for `nil` in Java, use the `isNil` method on a reference type; in particular,
+`Slice.isNil()`, `Channel.isNil()`, `Pointer.isNil()` and `Map.isNil()`
 
 ### Structs
 Structs in Go become independent classes in Java. So, a Go struct declared like this:
@@ -176,7 +209,7 @@ interface. The method set of any other type `T` consists of all methods declared
 
 A Java class representing `T` can have instance methods that reflect those in `T`. Instance methods
 can be defined on `T` (or `*T` provided `T` itself is not a pointer type) if those methods are
-defined in the same package as `T`. Therefore, `Reference` instances cannot have methods, nor can
+defined in the same package as `T`. Therefore, `Pointer` instances cannot have methods, nor can
 base types like `int` or `complex64`.
 
 ### Interfaces
