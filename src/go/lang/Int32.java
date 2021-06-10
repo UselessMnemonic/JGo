@@ -1,28 +1,51 @@
 package go.lang;
 
-public class Int32 implements GoObject {
+import java.util.Objects;
 
-    public int value;
+public class Int32 extends GoObject {
+
+    private int value;
+
+    public Int32() {
+        value = 0;
+    }
 
     public Int32(int value) {
         this.value = value;
     }
 
-    public static Int32[] arrayOf(int ...values) {
-        Int32[] result = new Int32[values.length];
-        for (int i = 0 ; i < values.length; i++) {
-            result[i] = new Int32(values[i]);
-        }
-        return result;
+    public Int32(Int32 other) {
+        this.value = other.value;
     }
 
-    @Override
-    public Int32 clone() {
-        return new Int32(this.value);
+    public int get() {
+        return value;
+    }
+
+    public void set(int value) {
+        this.value = value;
     }
 
     @Override
     public String toString() {
-        return String.valueOf(value);
+        return Integer.toString(value);
+    }
+
+    @Override
+    public Int32 clone() {
+        return new Int32(this);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if(other instanceof Int32) {
+            return ((Int32) other).value == this.value;
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(value);
     }
 }

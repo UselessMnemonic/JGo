@@ -1,11 +1,13 @@
 package go.lang;
 
+import java.util.Objects;
+
 /**
  * An array has a fixed size. A slice, on the other hand, is a dynamically-sized, flexible view into
  * the elements of an array. In practice, slices are much more common than arrays.
  * @param <T> The type of the elements in the slice
  */
-public class Slice<T> {
+public class Slice<T extends GoObject> extends GoObject {
     private final Array<T> array;
     private final int offset;
     public final int length;
@@ -59,37 +61,59 @@ public class Slice<T> {
         this.capacity = array.length - offset;
     }
 
-    public void set(int i, T value) {
-        if (i < 0 || i >= length)
-            throw new IllegalArgumentException("index out of range ["+i+"] with length " + length);
-        array[offset + i] = value;
-    }
-
     public T get(int i) {
         if (i < 0 || i >= length)
             throw new IllegalArgumentException("index out of range ["+i+"] with length " + length);
-        return array[offset + i];
+        return array.get(i);
     }
 
-    public Slice<T> reslice(int from, int to) {
+    public Slice<T> slice(int from, int to) {
         if (from > to)
             throw new IllegalArgumentException("invalid slice index: "+from+" > "+to);
         if (from < 0 || to > capacity)
-            throw new IllegalArgumentException("slice bounds out of range [:"+to+"] with capacity 6");
+            throw new IllegalArgumentException("slice bounds out of range [:"+to+"] with capacity " + capacity);
         return new Slice<>(this.array, offset + from, to - from);
     }
 
-    public Slice<T> resliceFrom(int from) {
-        return reslice(from, length);
+    public Class<T> getElementType() {
+        return array.getElementType();
     }
 
-    public Slice<T> resliceTo(int to) {
-        return reslice(0, to);
+    public Slice<T> append(T... elems) {
+        int newLength = array.length + elems.length;
+        T[] result = (T[]) java.lang.reflect.Array.newInstance(getElementType(), newLength);
+        for (int i = 0; i < array.length; i++) {
+            result[i] = (T) array.get(i).clone();
+        }
+        for (int i = array.length; i < newLength; i++) {
+            result[i] = elems[i];
+        }
+        return new Slice<>(new Array<>(getElementType(), result));
     }
 
     @Override
     public Slice<T> clone() {
         return new Slice<>(this.array, this.offset, this.length, this.capacity);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (!(other instanceof Slice)) return false;
+        Slice<?> otherSlice = (Slice<?>) other;
+        if (otherSlice.length != this.length) return false;
+        if (otherSlice.capacity != this.capacity) return false;
+        if (otherSlice.offset != this.offset) return false;
+        for (int i = 0; i < this.length; i++) {
+            if (!this.get(i).equals(otherSlice.get(i))) return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        Object[] elements = new Object[length];
+        for (int i = 0; i < length; i++) elements[i] = get(i);
+        return Objects.hash(elements);
     }
 
     @Override
