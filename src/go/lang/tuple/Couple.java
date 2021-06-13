@@ -1,4 +1,4 @@
-package go.lang;
+package go.lang.tuple;
 
 public class Couple<A, B> {
     public final A a;

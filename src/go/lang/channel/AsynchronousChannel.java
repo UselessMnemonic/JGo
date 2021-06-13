@@ -1,12 +1,11 @@
-package go.lang.internal;
+package go.lang.channel;
 
-import go.lang.Channel;
 import go.lang.GoObject;
 
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 
-public class AsynchronousChannel<T> extends Channel<T> {
+class AsynchronousChannel<T> extends Channel<T> {
 
     private final Queue<T> q;
 
@@ -26,8 +25,8 @@ public class AsynchronousChannel<T> extends Channel<T> {
     }
 
     @Override
-    public String toString() {
-        throw new UnsupportedOperationException();
+    public void assign(GoObject other) {
+
     }
 
     @Override
@@ -42,6 +41,11 @@ public class AsynchronousChannel<T> extends Channel<T> {
 
     @Override
     public int hashCode() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String toString() {
         throw new UnsupportedOperationException();
     }
 }

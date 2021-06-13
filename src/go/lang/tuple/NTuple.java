@@ -1,4 +1,4 @@
-package go.lang;
+package go.lang.tuple;
 
 public class NTuple {
     private final Object[] elements;

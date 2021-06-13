@@ -1,13 +1,12 @@
-package go.lang.internal;
+package go.lang.channel;
 
-import go.lang.Channel;
 import go.lang.GoObject;
 
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class SynchronousChannel<T> extends Channel<T> {
+class SynchronousChannel<T> extends Channel<T> {
 
     private final LinkedList<AtomicReference<T>> receivers;
     private final Random random;
@@ -51,8 +50,8 @@ public class SynchronousChannel<T> extends Channel<T> {
     }
 
     @Override
-    public String toString() {
-        throw new UnsupportedOperationException();
+    public void assign(GoObject other) {
+
     }
 
     @Override
@@ -67,6 +66,11 @@ public class SynchronousChannel<T> extends Channel<T> {
 
     @Override
     public int hashCode() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String toString() {
         throw new UnsupportedOperationException();
     }
 }

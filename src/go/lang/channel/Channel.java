@@ -1,11 +1,11 @@
-package go.lang;
+package go.lang.channel;
 
-import go.lang.internal.AsynchronousChannel;
-import go.lang.internal.SynchronousChannel;
+import go.lang.GoObject;
 
-public abstract class Channel<T> extends GoObject {
+public abstract class Channel<T extends GoObject> extends GoObject {
 
     protected final Class<T> elementType;
+    protected ChannelState state;
 
     public Channel(Class<T> clazz) {
         this.elementType = clazz;
@@ -19,11 +19,11 @@ public abstract class Channel<T> extends GoObject {
 
     public abstract T receive();
 
-    public static <T> Channel<T> make(Class<T> clazz) {
+    public static <T extends GoObject> Channel<T> make(Class<T> clazz) {
         return new SynchronousChannel<>(clazz);
     }
 
-    public static <T> Channel<T> make(Class<T> clazz, int capacity) {
+    public static <T extends GoObject> Channel<T> make(Class<T> clazz, int capacity) {
         return new AsynchronousChannel<>(clazz, capacity);
     }
 }
