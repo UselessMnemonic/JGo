@@ -7,8 +7,8 @@ public class MutableString extends GoObject implements CharSequence {
 
     public static final GoClass goClass = GoClass.forBuiltin(MutableString.class);
 
-    // The String value underlying this MutableString
-    private String value;
+    // The underlying data
+    private StringBuilder value;
 
     /**
      * Constructs a default MutableString, whose value is the empty String.
@@ -21,22 +21,15 @@ public class MutableString extends GoObject implements CharSequence {
      * Constructs an MutableString with the given value
      * @param value The String value
      */
-    public MutableString(String value) {
+    public MutableString(CharSequence value) {
         super(MutableString.goClass);
-        assign(value);
+        this.value = new StringBuilder(value);
     }
 
     // Private copy constructor
     private MutableString(MutableString other) {
         super(MutableString.goClass);
-        this.value = other.value;
-    }
-
-    /**
-     * Retrieves the String value underlying this MutableString
-     */
-    public String getString() {
-        return value;
+        this.value = new StringBuilder(other.value);
     }
 
     @Override
@@ -52,18 +45,7 @@ public class MutableString extends GoObject implements CharSequence {
      * @param other The MutableString whose value will be copied
      */
     public void assign(MutableString other) {
-        this.value = other.value;
-    }
-
-    /**
-     * Assigns the given String value to this MutableString
-     * @param value A non-null String
-     */
-    public void assign(String value) {
-        if (value == null) {
-            throw new IllegalArgumentException();
-        }
-        this.value = value;
+        this.value = new StringBuilder(other.value);
     }
 
     @Override
@@ -85,7 +67,7 @@ public class MutableString extends GoObject implements CharSequence {
      * @return True if both MutableStrings have the same value; False, otherwise
      */
     public boolean equals(MutableString other) {
-        return this.value.equals(other.value);
+        // TODO
     }
 
     @Override
@@ -95,7 +77,7 @@ public class MutableString extends GoObject implements CharSequence {
 
     @Override
     public String toString() {
-        return value;
+        return value.toString();
     }
 
     @Override
