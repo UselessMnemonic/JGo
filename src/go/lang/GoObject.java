@@ -20,10 +20,12 @@ package go.lang;
  * Pointer<Int32> elemPtr = new Pointer<>(array.get(1))
  * </pre>
  *
+ * Think of instantiating GoObjects as allocating space on the stack for local variables, or on the
+ * heap for calls to new() or make().
  */
 public abstract class GoObject implements Cloneable {
 
-    private final GoClass goClass;
+    public final GoClass goClass;
 
     protected GoObject(GoClass goClass) {
         this.goClass = goClass;
@@ -31,7 +33,7 @@ public abstract class GoObject implements Cloneable {
 
     /**
      * Assigns this object the value of the other object.
-     * This minimizes object creation by allowing objects representing variable or indexed elements
+     * This minimizes object creation by allowing objects representing variables or indexed elements
      * to act as single addressable components.
      *
      * @param other The new value
@@ -40,10 +42,10 @@ public abstract class GoObject implements Cloneable {
 
     /**
      * Creates a new, independent, clone of the current object. The clone is, in the Java sense, a
-     * deep copy if this object is a value-type--types like Int32 or regular Structs.
+     * deep copy if this object is a value-type--types like Int32 or Structs.
      *
-     * If this object is a reference type, like a Pointer or Channel, then the clone is, in the Java
-     * sense, an independent shallow copy.
+     * If this object is a reference type, like a Slice, then the clone is, in the Java sense,
+     * a shallow copy.
      *
      * @return A copy of this object
      */
@@ -55,9 +57,10 @@ public abstract class GoObject implements Cloneable {
      * Int32's are equal if their internal integers are equal.
      *
      * Reference types behave similarly to simple reference equality in Java (the == operator). Two
-     * reference-types are equal if their internal references are reference-equal. However, not all
-     * reference types in Go have a defined equality operator; equality on reference types might
-     * therefore be useless.
+     * reference types are equal if their internal references are exactly the same.
+     *
+     * Not all types in Go have a defined equality operator; equality on those types might therefore
+     * be useless.
      *
      * Always test two GoObjects using this method.
      *

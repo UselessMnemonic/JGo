@@ -45,40 +45,40 @@ Pointer<Int> ptr = new Pointer<Int>(c);
 ### Basic Types
 Defined types in Go have their own corresponding types in Java:
 ```
-+------------+------------+
-|     GO     |    JAVA    |
-+------------+------------+
-|            |            |
-| (u)int8    | (U)Int8    |
-|            |            |
-| (u)int16   | (U)Int16   |
-|            |            |
-| (u)int32   | (U)Int32   |
-|            |            |
-| (u)int64   | (U)Int64   |
-|            |            |
-| float32    | Float32    |
-|            |            |
-| float64    | Float64    |
-|            |            |
-| complex64  | Complex64  |
-|            |            |
-| complex128 | Complex128 |
-|            |            |
-| bool       | Bool       |
-|            |            |
-| string     | String     |
-|            |            |
-| [n]T       | Array<T>   |
-|            |            |
-| []T        | Slice<T>   |
-|            |            |
-| map[K]V    | Map<K,V>   |
-|            |            |
-| chan T     | Channel<T> |
-|            |            |
-| *T         | Pointer<T> |
-+------------+------------+
++------------+---------------+
+|     GO     |      JAVA     |
++------------+---------------+
+|            |               |
+| (u)int8    | (U)Int8       |
+|            |               |
+| (u)int16   | (U)Int16      |
+|            |               |
+| (u)int32   | (U)Int32      |
+|            |               |
+| (u)int64   | (U)Int64      |
+|            |               |
+| float32    | Float32       |
+|            |               |
+| float64    | Float64       |
+|            |               |
+| complex64  | Complex64     |
+|            |               |
+| complex128 | Complex128    |
+|            |               |
+| bool       | Bool          |
+|            |               |
+| string     | MutableString |
+|            |               |
+| [n]T       | Array<T>      |
+|            |               |
+| []T        | Slice<T>      |
+|            |               |
+| map[K]V    | Map<K,V>      |
+|            |               |
+| chan T     | Channel<T>    |
+|            |               |
+| *T         | Pointer<T>    |
++------------+---------------+
 ```
 
 #### Aliases

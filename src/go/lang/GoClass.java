@@ -1,7 +1,7 @@
 package go.lang;
 
 import go.lang.channel.Channel;
-import util.OrderedHashMap;
+import util.TupleMap;
 import java.util.HashMap;
 
 /**
@@ -11,30 +11,27 @@ import java.util.HashMap;
  * information that may be needed in reflective operations.
  *
  * All types have unique Go classes, even between similar types. For example, the slices []int and
- * []string (rather, Slice<Int32> and Slice<String>) may have the same Java class, but they will
- * always have unique GoClasses.
+ * []string (rather, Slice<Int32> and Slice<String>) may have the same Java class, but have
+ * unique GoClasses.
  */
 public final class GoClass {
 
-    private static final HashMap<Class<?>, GoClass> PRIMITIVE_TYPES;
-
+    private static final HashMap<Class<?>, GoClass> BUILTIN_TYPES;
+    private static final HashMap<Class<?>, GoClass> STRUCT_TYPES;
     private static final HashMap<GoClass, GoClass> ARRAY_TYPES;
-
     private static final HashMap<GoClass, GoClass> SLICE_TYPES;
-
     private static final HashMap<GoClass, GoClass> CHANNEL_TYPES;
-
     private static final HashMap<GoClass, GoClass> POINTER_TYPES;
-
-    private static final OrderedHashMap<GoClass, GoClass, GoClass> MAP_TYPES;
+    private static final TupleMap<GoClass, GoClass, GoClass> MAP_TYPES;
 
     static {
-        PRIMITIVE_TYPES = new HashMap<>();
+        BUILTIN_TYPES = new HashMap<>();
+        STRUCT_TYPES = new HashMap<>();
         ARRAY_TYPES = new HashMap<>();
         SLICE_TYPES = new HashMap<>();
         CHANNEL_TYPES = new HashMap<>();
         POINTER_TYPES = new HashMap<>();
-        MAP_TYPES = new OrderedHashMap<>();
+        MAP_TYPES = new TupleMap<>();
     }
 
     public final Class<?> javaClass;
@@ -46,14 +43,14 @@ public final class GoClass {
         this.javaClass = javaClass;
         this.elementType = null;
         this.keyType = null;
-        this.numElements = 0;
+        this.numElements = -1;
     }
 
     private GoClass(Class<?> javaClass, GoClass elementType) {
         this.javaClass = javaClass;
         this.elementType = elementType;
         this.keyType = null;
-        this.numElements = 0;
+        this.numElements = -1;
     }
 
     private GoClass(Class<?> javaClass, GoClass elementType, int numElements) {
@@ -67,44 +64,45 @@ public final class GoClass {
         this.javaClass = javaClass;
         this.elementType = elementType;
         this.keyType = keyType;
-        this.numElements = 0;
+        this.numElements = -1;
     }
 
     /**
      * Gets the Go class for this class's element type.
-     *
      * Objects with element types include arrays, slices, maps, and pointers. The element type for
-     * any of these is the type of data that is retrieved.
-     *
-     * @return The element type of this class
+     * any of these is the type of data that is contained by them.
+     * @return The element type of this class; null if this GoClass has no element type.
      */
     public GoClass getElementType() {
         return elementType;
     }
 
     /**
-     * Gets the key type of this map type.
-     *
+     * Gets the key type for this class.
      * The key type for a map is the type of data used to index the map.
-     *
-     * @return The key type
+     * @return The key type; null if this GoClass does not represent a map.
      */
     public GoClass getKeyType() {
         return keyType;
     }
 
     /**
-     * Gets the number of elements used by this array type.
-     *
-     * In Go, type information for arrays includes their size.
-     *
-     * @return The number of elements allocated by this array type.
+     * Gets the number of elements used by this class, if this class represents an array.
+     * @return The number of elements allocated by this array type; -1 if this GoClass does not
+     * represent an array.
      */
     public int getNumElements() {
         return numElements;
     }
 
-    public GoObject getDefaultValue() throws UnsupportedOperationException {
+    /**
+     * Generates a default value for this GoClass. Any arbitrary user-defined type must have a
+     * no-args constructor that creates a default value.
+     * @return The default value for this GoClass
+     * @throws UnsupportedOperationException If the type represented by this GoClass does not have
+     * a no-args constructor.
+     */
+    public GoObject newDefaultValue() throws UnsupportedOperationException {
         if (javaClass == Array.class) {
             return new Array<>(elementType, numElements);
         }
@@ -115,7 +113,7 @@ public final class GoClass {
             return new Pointer<>(elementType);
         }
         else if (javaClass == Map.class) {
-            return new Map<>(elementType, keyType, false);
+            return new Map<>(elementType, keyType);
         }
         else try {
             return (GoObject) javaClass.getDeclaredConstructor().newInstance();
@@ -124,13 +122,22 @@ public final class GoClass {
         }
     }
 
-    public static GoClass forPrimitive(Class<?> primitiveClass) {
+    static GoClass forBuiltin(Class<?> primitiveClass) {
         // If the basic type does not have a GoClass rep, create one
-        if (!PRIMITIVE_TYPES.containsKey(primitiveClass)) {
+        if (!BUILTIN_TYPES.containsKey(primitiveClass)) {
             GoClass type = new GoClass(primitiveClass);
-            PRIMITIVE_TYPES.put(primitiveClass, type);
+            BUILTIN_TYPES.put(primitiveClass, type);
         }
-        return PRIMITIVE_TYPES.get(primitiveClass);
+        return BUILTIN_TYPES.get(primitiveClass);
+    }
+
+    public static GoClass forStruct(Class<?> structClass) {
+        // If the basic type does not have a GoClass rep, create one
+        if (!STRUCT_TYPES.containsKey(structClass)) {
+            GoClass type = new GoClass(structClass);
+            STRUCT_TYPES.put(structClass, type);
+        }
+        return STRUCT_TYPES.get(structClass);
     }
 
     public static GoClass forArray(GoClass elementType, int numElements) {
