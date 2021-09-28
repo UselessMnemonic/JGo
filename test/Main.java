@@ -1,7 +1,6 @@
-import go.lang.channel.Channel;
-import go.lang.Int8;
+import go.builtin.channel.Channel;
+import go.builtin.Int8;
 import sun.misc.Signal;
-import sun.misc.SignalHandler;
 
 import java.util.Random;
 import java.util.concurrent.ExecutorService;

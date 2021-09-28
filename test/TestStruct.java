@@ -1,8 +1,8 @@
-import go.lang.Bool;
-import go.lang.GoClass;
-import go.lang.GoObject;
-import go.lang.MutableString;
-import go.lang.annotations.Field;
+import go.builtin.Bool;
+import go.builtin.GoClass;
+import go.builtin.GoObject;
+import go.builtin.MutableString;
+import go.builtin.annotations.Field;
 
 import java.util.Objects;
 
