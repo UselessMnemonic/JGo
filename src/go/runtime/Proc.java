@@ -6,24 +6,24 @@ import java.util.function.BiFunction;
 public class Proc {
 
     public static void park(BiFunction<G, Object, Boolean> unlockf, Object lock) {
-        if (lock == null) {
+        final G gp = G.getg();
+        if (unlockf == null && lock == null) {
+            if (Proc.debugProc) System.out.printf("proc: indefinite park g=%s\n", gp);
             while (true) LockSupport.park();
-        } else {
-            final G gp = G.getg();
-            final boolean[] b = new boolean[] {false};
-            LockSupport.setCurrentBlocker(lock);
-            if (unlockf != null && unlockf.apply(gp, lock)) {
-                LockSupport.setCurrentBlocker(null);
-                return;
-            }
-            while (!b[0]) LockSupport.park(b);
         }
+        if (unlockf != null && !unlockf.apply(gp, lock)) {
+            if (Proc.debugProc) System.out.printf("proc: lock fail g=%s\n", gp);
+            return;
+        }
+        if (Proc.debugProc) System.out.printf("proc: park g=%s\n", gp);
+        while (gp.param == null) LockSupport.park();
+        if (Proc.debugProc) System.out.printf("proc: unparked g=%s, param=%s\n", gp, gp.param);
     }
 
     public static void ready(G gp) {
-        if (LockSupport.getBlocker(gp.th) instanceof boolean[] b) {
-            b[0] = true;
-        }
         LockSupport.unpark(gp.th);
+        if (Proc.debugProc) System.out.printf("proc: ready g=%s, param=%s\n", gp, gp.param);
     }
+
+    public static final boolean debugProc = true;
 }

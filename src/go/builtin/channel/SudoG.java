@@ -30,8 +30,15 @@ public class SudoG {
         if (s.isSelect) {
             throw new IllegalStateException("runtime: sudog with non-false isSelect");
         }
+        if (s.waitlink != null) {
+            throw new IllegalStateException("runtime: sudog with non-nil waitlink");
+        }
         if (s.c != null) {
             throw new IllegalStateException("runtime: sudog with non-nil c");
+        }
+        G gp = G.getg();
+        if (gp.param != null) {
+            throw new IllegalStateException("runtime: releaseSudog with non-nil gp.param");
         }
     }
 }

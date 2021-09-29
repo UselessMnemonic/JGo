@@ -67,7 +67,7 @@ public class MutableString extends GoObject implements CharSequence {
      * @return True if both MutableStrings have the same value; False, otherwise
      */
     public boolean equals(MutableString other) {
-        // TODO
+        return value.toString().equals(other.toString());
     }
 
     @Override

@@ -42,7 +42,7 @@ public class Channel<T extends GoObject> extends GoObject {
     }
 
     public Couple<T, Bool> receive2() {
-        Object[] result = new Object[1];
+        Object[] result = new Object[] {null};
         HChan.chanrecv(hchan, result, true);
         if (result[0] == null) {
             return Couple.of((T) getGoClass().getElementType().newDefaultValue(), new Bool(false));
