@@ -4,12 +4,10 @@ import go.builtin.GoObject;
 import go.builtin.tuple.Couple;
 import go.runtime.G;
 import go.runtime.Proc;
-import util.WaitingAssigner;
-import util.WaitlinkAssigner;
 
 import java.util.Arrays;
 import java.util.SplittableRandom;
-import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicReference;
 
 public final class Case {
     private final HChan c;
@@ -32,7 +30,61 @@ public final class Case {
         return (T) elem[0];
     }
 
+    private static void sellock(Case[] scases, int[] lockorder) {
+        HChan c = null;
+        for (int o : lockorder) {
+            HChan c0 = scases[o].c;
+            if (c0 != c) {
+                c = c0;
+                c.lock.lock();
+            }
+        }
+        if (Case.debugSelect) {
+            System.out.printf("select: sellock scases=%s\n", (Object) scases);
+        }
+    }
+
+    private static void selunlock(Case[] scases, int[] lockorder) {
+        if (Case.debugSelect) {
+            System.out.printf("select: selunlock scases=%s\n", (Object)scases);
+        }
+        for (int i = lockorder.length - 1; i >= 0; i--) {
+            HChan c = scases[lockorder[i]].c;
+            if (i > 0 && c == scases[lockorder[i-1]].c) {
+                continue; // will unlock it on the next iteration
+            }
+            c.lock.unlock();
+        }
+    }
+
+    private static boolean selparkcommit(G gp, Object ignore) {
+        if (Case.debugSelect) {
+            System.out.printf("select: selparkcommit gp=%s\n", gp);
+        }
+        HChan lastc = null;
+        for (SudoG sg = gp.waiting.get(); sg != null; sg = sg.waitlink.get()) {
+            if (sg.c != lastc && lastc != null) {
+                // As soon as we unlock the channel, fields in
+                // any sudog with that channel may change,
+                // including c and waitlink. Since multiple
+                // sudogs may have the same channel, we unlock
+                // only after we've passed the last instance
+                // of a channel.
+                lastc.lock.unlock();
+            }
+            lastc = sg.c;
+        }
+        if (lastc != null) {
+            lastc.lock.unlock();
+        }
+        return true;
+    }
+
     public static Couple<Integer, Boolean> select(Case[] scases, boolean block) {
+        if (Case.debugSelect) {
+            System.out.printf("select: scases=%s\n", (Object) scases);
+        }
+
         int[] pollorder = new int[scases.length];
         int[] lockorder = new int[scases.length];
 
@@ -50,7 +102,7 @@ public final class Case {
 
             int j = fastrandn.nextInt(norder + 1);
             pollorder[norder] = pollorder[j];
-            pollorder[j] = (short) i; // why not lol
+            pollorder[j] = i;
             norder++;
         }
         pollorder = Arrays.copyOf(pollorder, norder);
@@ -59,8 +111,9 @@ public final class Case {
         // sort the cases by Hchan address (hash) to get the locking order.
         for (int i = 0; i < lockorder.length; i++) {
             int j = i;
+            // Start with the pollorder to permute cases on the same channel.
             HChan c = scases[pollorder[i]].c;
-            while (j > 0 && scases[lockorder[(j-1)/2]].c.hashCode() < c.hashCode()) {
+            while ((j > 0) && scases[lockorder[(j-1)/2]].c.hashCode() < c.hashCode()) {
                 int k = (j - 1) / 2;
                 lockorder[j] = lockorder[k];
                 j = k;
@@ -72,8 +125,8 @@ public final class Case {
             HChan c = scases[o].c;
             lockorder[i] = lockorder[0];
             int j = 0;
-            while (true) {
-                int k = (j * 2) + 1;
+            for (;;) {
+                int k = (j*2) + 1;
                 if (k >= i) {
                     break;
                 }
@@ -91,9 +144,9 @@ public final class Case {
         }
 
         if (Case.debugSelect) {
-            for (int i = 0; i+1 < lockorder.length; i++) {
+            for (int i = 0; (i+1) < lockorder.length; i++) {
                 if (scases[lockorder[i]].c.hashCode() > scases[lockorder[i+1]].c.hashCode()) {
-                    System.out.printf("i=%d, x=%s, y=%s", i, lockorder[i], lockorder[i+1]);
+                    System.out.printf("i=%d x=%d y=%d\n", i, lockorder[i], lockorder[i+1]);
                     throw new IllegalStateException("select: broken sort");
                 }
             }
@@ -108,17 +161,18 @@ public final class Case {
         Case k;
         SudoG sglist;
         SudoG sgnext;
-        Consumer<SudoG> nextp;
+        AtomicReference<SudoG> nextp;
 
         // pass 1 - look for something already waiting
         int casi;
         Case cas;
         boolean caseSuccess;
         boolean recvOK = false;
-        for (int casei = 0; casei < pollorder.length; casei++) {
+        for (int casei : pollorder) {
             casi = casei;
             cas = scases[casi];
             c = cas.c;
+
             if (cas.isSend) {
                 if (c.closed) return sclose(scases, lockorder);
                 sg = c.recvq.dequeue();
@@ -140,11 +194,11 @@ public final class Case {
 
         // pass 2 - enqueue on all chans
         gp = G.getg();
-        if (gp.waiting != null) {
+        if (gp.waiting.get() != null) {
             throw new IllegalStateException("gp.waiting != null");
         }
-        nextp = new WaitingAssigner(gp);
-        for (int casei = 0; casei < lockorder.length; casei++) {
+        nextp = gp.waiting;
+        for (int casei : lockorder) {
             casi = casei;
             cas = scases[casi];
             c = cas.c;
@@ -153,8 +207,9 @@ public final class Case {
             sg.isSelect = true;
             sg.elem = cas.elem;
             sg.c = c;
-            nextp.accept(sg);
-            nextp = new WaitlinkAssigner(sg);
+            // Construct waiting list in lock order.
+            nextp.set(sg);
+            nextp = sg.waitlink;
 
             if (cas.isSend) c.sendq.enqueue(sg);
             else c.recvq.enqueue(sg);
@@ -166,7 +221,7 @@ public final class Case {
 
         sellock(scases, lockorder);
 
-        gp.selectDone = false;
+        gp.selectDone.set(false);
         sg = (SudoG) gp.param;
         gp.param = null;
 
@@ -177,16 +232,16 @@ public final class Case {
         casi = -1;
         cas = null;
         caseSuccess = false;
-        sglist = gp.waiting;
+        sglist = gp.waiting.get();
         // Clear all elem before unlinking from gp.waiting.
-        for (SudoG sg1 = gp.waiting; sg1 != null; sg1 = sg1.waitlink) {
+        for (SudoG sg1 = gp.waiting.get(); sg1 != null; sg1 = sg1.waitlink.get()) {
             sg1.isSelect = false;
             sg1.elem = null;
             sg1.c = null;
         }
-        gp.waiting = null;
+        gp.waiting.set(null);
 
-        for (int casei = 0; casei < lockorder.length; casei++) {
+        for (int casei : lockorder) {
             k = scases[casei];
             if (sg == sglist) {
                 // sg has already been dequeued by the G that woke us up.
@@ -198,13 +253,19 @@ public final class Case {
                 if (k.isSend) c.sendq.remove(sglist);
                 else c.recvq.remove(sglist);
             }
-            sgnext = sglist.waitlink;
-            sglist.waitlink = null;
+            sgnext = sglist.waitlink.get();
+            sglist.waitlink.set(null);
             SudoG.releaseSudog(sglist);
             sglist = sgnext;
         }
 
         if (cas == null) throw new IllegalStateException("selectgo: bad wakeup");
+
+        c = cas.c;
+
+        if (debugSelect) {
+            System.out.printf("wait-return: scases=%s c=%s cas=%s send=%s\n", scases, c, cas, cas.isSend);
+        }
 
         if (cas.isSend) {
             if (!caseSuccess) return sclose(scases, lockorder);
@@ -232,6 +293,9 @@ public final class Case {
     }
 
     private static Couple<Integer, Boolean> recv(HChan c, SudoG sg, Case cas, Case[] scases, int[] lockorder, int casi) {
+        if (Case.debugSelect) {
+            System.out.printf("syncrecv: scases=%s c=%s\n", scases, c);
+        }
         c.recv(sg, cas.elem, () -> selunlock(scases, lockorder));
         return retc(casi, true);
     }
@@ -245,6 +309,9 @@ public final class Case {
     }
 
     private static Couple<Integer, Boolean> send(HChan c, SudoG sg, Case cas, Case[] scases, int[] lockorder, int casi, boolean recvOK) {
+        if (Case.debugSelect) {
+            System.out.printf("syncsend: scases=%s c=%s\n", scases, c);
+        }
         c.send(sg, cas.elem, () -> selunlock(scases, lockorder));
         return retc(casi, recvOK);
     }
@@ -258,46 +325,5 @@ public final class Case {
         throw new IllegalStateException("send on closed channel"); // TODO panic
     }
 
-    private static void sellock(Case[] cases, int[] lockorder) {
-        HChan c = null;
-        for (int o : lockorder) {
-            HChan c0 = cases[o].c;
-            if (c0 != c) {
-                c = c0;
-                c.lock.lock();
-            }
-        }
-    }
-
-    private static void selunlock(Case[] cases, int[] lockorder) {
-        for (int i = lockorder.length - 1; i >= 0; i--) {
-            HChan c = cases[lockorder[i]].c;
-            if (i > 0 && c == cases[lockorder[i-1]].c) {
-                continue; // will unlock it on the next iteration
-            }
-            c.lock.unlock();
-        }
-    }
-
-    private static boolean selparkcommit(G gp, Object ignore) {
-        HChan lastc = null;
-        for (SudoG sg = gp.waiting; sg != null; sg = sg.waitlink) {
-            if (sg.c != lastc && lastc != null) {
-                // As soon as we unlock the channel, fields in
-                // any sudog with that channel may change,
-                // including c and waitlink. Since multiple
-                // sudogs may have the same channel, we unlock
-                // only after we've passed the last instance
-                // of a channel.
-                lastc.lock.unlock();
-            }
-            lastc = sg.c;
-        }
-        if (lastc != null) {
-            lastc.lock.unlock();
-        }
-        return true;
-    }
-
-    public static final boolean debugSelect = true;
+    public static final boolean debugSelect = false;
 }

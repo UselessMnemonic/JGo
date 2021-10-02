@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
 class HChan {
     final int dataqsiz;
     final Queue<Object[]> buf;
-    boolean closed;
+    volatile boolean closed;
     final WaitQ recvq;
     final WaitQ sendq;
     final ReentrantLock lock;
@@ -47,7 +47,7 @@ class HChan {
 
     // entrypoint for send
     public static boolean chansend(HChan c, Object elem, boolean block) {
-        if (HChan.debugChan)  System.out.printf("chansend: chan=%s\n", c);
+        if (HChan.debugChan) System.out.printf("chansend: chan=%s\n", c);
 
         if (c == null) {
             if (!block) {
@@ -68,6 +68,7 @@ class HChan {
         }
 
         lock.lock(); // START CRITICAL SECTION
+        if (HChan.debugChan) System.out.printf("chansend: lock chan=%s\n", this);
 
         if (closed) {
             lock.unlock(); // END CRITICAL SECTION
@@ -84,7 +85,7 @@ class HChan {
 
         if (buf.size() < dataqsiz) {
             // Space is available in the channel buffer. Enqueue the element to send.
-            if (HChan.debugChan)  System.out.printf("chansend: buf chan=%s, ep=%s\n", this, ep[0]);
+            if (HChan.debugChan) System.out.printf("chansend: buf chan=%s, ep=%s\n", this, ep[0]);
             buf.add(ep);
             lock.unlock(); // END CRITICAL SECTION
             return true;
@@ -99,22 +100,22 @@ class HChan {
         G gp = G.getg();
         SudoG mysg = SudoG.aquireSudog();
         mysg.elem = ep;
-        mysg.waitlink = null;
+        mysg.waitlink.set(null);
         mysg.g = gp;
         mysg.isSelect = false;
         mysg.c = this;
-        gp.waiting = mysg;
+        gp.waiting.set(mysg);
         gp.param = null;
-        if (HChan.debugChan)  System.out.printf("chansend: park chan=%s, mysg=%s, gp=%s\n", this, mysg, gp);
+        if (HChan.debugChan) System.out.printf("chansend: park chan=%s, mysg=%s, gp=%s\n", this, mysg, gp);
         sendq.enqueue(mysg);
-        Proc.park(HChan::charnparkcommit, lock); // END CRITICAL SECTION
+        Proc.park(HChan::chanparkcommit, lock); // END CRITICAL SECTION
 
         // someone woke us up.
-        if (HChan.debugChan)  System.out.printf("chansend: wake chan=%s, mysg.elem=%s, gp=%s\n", this, mysg.elem, gp);
-        if (mysg != gp.waiting) {
+        if (HChan.debugChan) System.out.printf("chansend: wake chan=%s, mysg.elem=%s, gp=%s\n", this, mysg.elem, gp);
+        if (mysg != gp.waiting.get()) {
             throw new IllegalStateException("G waiting list is corrupted");
         }
-        gp.waiting = null;
+        gp.waiting.set(null);
         boolean closed = !mysg.success;
         gp.param = null;
         mysg.c = null;
@@ -129,7 +130,7 @@ class HChan {
     }
 
     void send(SudoG sg, Object[] src, Action unlockf) {
-        if (HChan.debugChan)  System.out.printf("chansend: send chan=%s, sg=%s, src=%s\n", this, sg, src);
+        if (HChan.debugChan) System.out.printf("chansend: send chan=%s, sg=%s, src=%s\n", this, sg, src);
 
         if (sg.elem != null) {
             sg.elem[0] = src[0];
@@ -199,12 +200,12 @@ class HChan {
         if (dataqsiz == 0) {
             return sendq.isEmpty();
         }
-        return buf.size() == 0;
+        return buf.isEmpty();
     }
 
     // entrypoint for recv
     public static Couple<Boolean, Boolean> chanrecv(HChan c, Object[] ep, boolean block) {
-        if (HChan.debugChan)  System.out.printf("chanrecv: chan=%s\n", c);
+        if (HChan.debugChan) System.out.printf("chanrecv: chan=%s\n", c);
 
         if (c == null) {
             if (!block) {
@@ -233,6 +234,7 @@ class HChan {
         }
 
         lock.lock(); // BEGIN CRITICAL SECTION
+        if (HChan.debugChan) System.out.printf("chanrecv: lock chan=%s\n", this);
 
         if (closed && buf.isEmpty()) {
             lock.unlock(); // END CRITICAL SECTION
@@ -270,22 +272,22 @@ class HChan {
         G gp = G.getg();
         SudoG mysg = SudoG.aquireSudog();
         mysg.elem = ep;
-        mysg.waitlink = null;
-        gp.waiting = mysg;
+        mysg.waitlink.set(null);
+        gp.waiting.set(mysg);
         mysg.g = gp;
         mysg.isSelect = false;
         mysg.c = this;
         gp.param = null;
-        if (HChan.debugChan)  System.out.printf("chanrecv: park chan=%s, mysg=%s, gp=%s\n", this, mysg, gp);
+        if (HChan.debugChan) System.out.printf("chanrecv: park chan=%s, mysg=%s, gp=%s\n", this, mysg, gp);
         recvq.enqueue(mysg);
-        Proc.park(HChan::charnparkcommit, lock); // END CRITICAL SECTION
+        Proc.park(HChan::chanparkcommit, lock); // END CRITICAL SECTION
 
         // someone woke us up
-        if (HChan.debugChan)  System.out.printf("chanrecv: wake chan=%s, mysg.elem=%s, gp=%s\n", this, mysg.elem, gp);
-        if (mysg != gp.waiting) {
+        if (HChan.debugChan) System.out.printf("chanrecv: wake chan=%s, mysg.elem=%s, gp=%s\n", this, mysg.elem, gp);
+        if (mysg != gp.waiting.get()) {
             throw new IllegalStateException("G waiting list is corrupted");
         }
-        gp.waiting = null;
+        gp.waiting.set(null);
         boolean success = mysg.success;
         gp.param = null;
         mysg.c = null;
@@ -294,7 +296,7 @@ class HChan {
     }
 
     void recv(SudoG sg, Object[] ep, Action unlockf) {
-        if (HChan.debugChan)  System.out.printf("chanrecv: recv chan=%s, sg=%s, ep=%s\n", this, sg, ep);
+        if (HChan.debugChan) System.out.printf("chanrecv: recv chan=%s, sg=%s, ep=%s\n", this, sg, ep);
         if (dataqsiz == 0) {
             if (ep != null) {
                 ep[0] = sg.elem[0];
@@ -318,26 +320,24 @@ class HChan {
         Proc.ready(gp);
     }
 
-    private static boolean charnparkcommit(G gp, Object chanLock) {
+    private static boolean chanparkcommit(G gp, Object chanLock) {
         ((Lock) chanLock).unlock();
         return true;
     }
 
-    private static final boolean debugChan = true;
+    private static final boolean debugChan = false;
 
     @Override
     public int hashCode() {
-        return Objects.hash(lock, sendq, recvq);
+        return lock.hashCode();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        else if (o instanceof HChan other) {
-            return (this.lock == other.lock)
-                && (this.sendq == other.sendq)
-                && (this.recvq == other.recvq);
-        }
-        else return false;
+        return o == this;
+    }
+
+    public String toString() {
+        return "hchan@%d".formatted(this.hashCode());
     }
 }

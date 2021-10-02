@@ -7,11 +7,11 @@ import java.util.LinkedList;
 public class WaitQ extends LinkedList<SudoG> {
     public SudoG dequeue() {
         for (;;) {
-            SudoG sgp = this.pollFirst();
+            SudoG sgp = pollFirst();
             if (sgp == null) {
                 return null;
             }
-            if (sgp.isSelect && sgp.selectDone.compareAndSet(false, true)) {
+            if (sgp.isSelect && !sgp.g.selectDone.compareAndSet(false, true)) {
                 continue;
             }
             return sgp;
@@ -19,6 +19,6 @@ public class WaitQ extends LinkedList<SudoG> {
     }
 
     public void enqueue(SudoG sgp) {
-        this.add(sgp);
+        this.addLast(sgp);
     }
 }

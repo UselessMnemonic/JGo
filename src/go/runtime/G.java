@@ -3,6 +3,9 @@ package go.runtime;
 import go.builtin.channel.SudoG;
 
 import java.util.WeakHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 
 public class G {
 
@@ -13,9 +16,10 @@ public class G {
     }
 
     public volatile Object param = null;
-    public volatile boolean selectDone = false;
-    public volatile SudoG waiting = null;
+    public final AtomicBoolean selectDone = new AtomicBoolean();
+    public final AtomicReference<SudoG> waiting = new AtomicReference<>(null);
     public final Thread th;
+    public final AtomicReference<Status> status = new AtomicReference<>(Status.RUNNING);
 
     public static G getg() {
         Thread th = Thread.currentThread();
@@ -27,5 +31,27 @@ public class G {
             weakGPool.put(th, g);
             return g;
         }
+    }
+
+    public void casgstatus(Status oldval, Status newval) {
+        if (oldval == newval) {
+            throw new IllegalArgumentException("casgstatus: bad incoming values");
+        }
+        while (!status.compareAndSet(oldval, newval)) {
+            if (oldval == Status.WAITING && status.get() == Status.RUNNABLE) {
+                throw new IllegalStateException("casgstatus: waiting for Gwaiting but is Grunnable");
+            }
+            //LockSupport.parkNanos(1000);
+        }
+    }
+
+    public String toString() {
+        return "G@%d".formatted(this.hashCode());
+    }
+
+    public enum Status {
+        WAITING,
+        RUNNABLE,
+        RUNNING
     }
 }

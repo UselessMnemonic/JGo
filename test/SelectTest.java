@@ -20,18 +20,20 @@ public class SelectTest {
         new Thread(new RandomInt8ChanSender(ch2)).start();
 
         while (run) {
-            Case[] cases0 = new Case[] {
+            Case[] cases = new Case[] {
                     new Case(ch1),
                     new Case(ch2)
             };
-            Couple<Integer, Boolean> result0 = Case.select(cases0, true);
-            if (result0.a == 0) {
-                Case winner0 = cases0[result0.a];
-                System.out.println("Case 1 won: " + winner0.value());
+            Couple<Integer, Boolean> result = Case.select(cases, true);
+            Case winner;
+
+            if (result.a == 0) {
+                winner = cases[0];
+                System.out.println("Case 1 won: " + winner.value());
             }
-            else if (result0.a == 1) {
-                Case winner0 = cases0[result0.a];
-                System.out.println("Case 2 won: " + winner0.value());
+            else if (result.a == 1) {
+                winner = cases[1];
+                System.out.println("Case 2 won: " + winner.value());
             }
             else {
                 System.out.println("Default case won!");
@@ -40,24 +42,3 @@ public class SelectTest {
     }
 }
 
-class RandomInt8ChanSender implements Runnable {
-    private final Channel<Int8> ch;
-
-    public RandomInt8ChanSender(Channel<Int8> ch) {
-        this.ch = ch;
-    }
-
-    @Override
-    public void run() {
-        Random random = new Random();
-        Int8 byt = new Int8((byte) 0);
-        try {
-            while (SelectTest.run) {
-                byt.assign((byte) random.nextInt());
-                ch.send(byt.clone());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-}

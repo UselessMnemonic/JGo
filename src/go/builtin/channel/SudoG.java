@@ -3,6 +3,7 @@ package go.builtin.channel;
 import go.runtime.G;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class SudoG {
 
@@ -13,9 +14,8 @@ public class SudoG {
 
     public volatile boolean success;
 
-    public final AtomicBoolean selectDone = new AtomicBoolean();
+    public final AtomicReference<SudoG> waitlink = new AtomicReference<>(null);
     public volatile HChan c;
-    public volatile SudoG waitlink = null;
 
     private SudoG() {}
 
@@ -30,7 +30,7 @@ public class SudoG {
         if (s.isSelect) {
             throw new IllegalStateException("runtime: sudog with non-false isSelect");
         }
-        if (s.waitlink != null) {
+        if (s.waitlink.get() != null) {
             throw new IllegalStateException("runtime: sudog with non-nil waitlink");
         }
         if (s.c != null) {
@@ -40,5 +40,9 @@ public class SudoG {
         if (gp.param != null) {
             throw new IllegalStateException("runtime: releaseSudog with non-nil gp.param");
         }
+    }
+
+    public String toString() {
+        return "SudoG@%d".formatted(this.hashCode());
     }
 }
