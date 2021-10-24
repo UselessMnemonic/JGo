@@ -23,12 +23,16 @@ package go.builtin;
  * Think of instantiating GoObjects as allocating space on the stack for local variables, or on the
  * heap for calls to new() or make().
  */
-public abstract class GoObject implements Cloneable {
+public abstract class GoObject implements GoInterface {
 
     private final GoClass goClass;
 
     protected GoObject(GoClass goClass) {
         this.goClass = goClass;
+    }
+
+    protected GoObject(GoObject other) {
+        this.goClass = other.goClass;
     }
 
     /**

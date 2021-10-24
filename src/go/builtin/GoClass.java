@@ -23,6 +23,7 @@ public final class GoClass {
     private static final HashMap<GoClass, GoClass> CHANNEL_TYPES;
     private static final HashMap<GoClass, GoClass> POINTER_TYPES;
     private static final TupleMap<GoClass, GoClass, GoClass> MAP_TYPES;
+    private static final HashMap<Class<? extends GoInterface>, GoClass> IF_TYPES;
 
     static {
         BUILTIN_TYPES = new HashMap<>();
@@ -32,6 +33,7 @@ public final class GoClass {
         CHANNEL_TYPES = new HashMap<>();
         POINTER_TYPES = new HashMap<>();
         MAP_TYPES = new TupleMap<>();
+        IF_TYPES = new HashMap<>();
     }
 
     public final Class<?> javaClass;
@@ -183,5 +185,13 @@ public final class GoClass {
             MAP_TYPES.put(keyType, valueType, type);
         }
         return MAP_TYPES.get(keyType, valueType);
+    }
+
+    public static GoClass forInterface(Class<? extends GoInterface> itype) {
+        if (!IF_TYPES.containsKey(itype)) {
+            GoClass type = new GoClass(GoInterface.class);
+            IF_TYPES.put(itype, type);
+        }
+        return IF_TYPES.get(itype);
     }
 }

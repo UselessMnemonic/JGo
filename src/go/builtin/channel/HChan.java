@@ -1,8 +1,9 @@
 package go.builtin.channel;
 
-import go.builtin.tuple.Couple;
+import go.tuple.Couple;
 import go.runtime.G;
 import go.runtime.Proc;
+import go.runtime.SudoG;
 import go.runtime.WaitQ;
 import util.Action;
 import util.EmptyQueue;
@@ -12,7 +13,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-class HChan {
+public class HChan {
     final int dataqsiz;
     final Queue<Object[]> buf;
     volatile boolean closed;

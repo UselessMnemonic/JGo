@@ -1,4 +1,4 @@
-package go.builtin.tuple;
+package go.tuple;
 
 public class Triple<A, B, C> {
     public final A a;

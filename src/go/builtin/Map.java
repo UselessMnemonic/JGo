@@ -1,6 +1,6 @@
 package go.builtin;
 
-import go.builtin.tuple.Couple;
+import go.tuple.Couple;
 
 import java.util.HashMap;
 import java.util.List;

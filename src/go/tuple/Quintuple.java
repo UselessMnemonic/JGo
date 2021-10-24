@@ -1,4 +1,4 @@
-package go.builtin.tuple;
+package go.tuple;
 
 public class Quintuple<A, B, C, D, E> {
     public final A a;

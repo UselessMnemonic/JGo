@@ -1,4 +1,4 @@
-package go.builtin.annotations;
+package go.annotations;
 
 /**
  * An annotation for struct types that contains information about the

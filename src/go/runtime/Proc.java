@@ -40,7 +40,7 @@ public class Proc {
     public static void ready(G gp) {
         G.Status status = gp.status.get();
         if (status != G.Status.WAITING) {
-            //throw new IllegalArgumentException("bad g->status in ready");
+            throw new IllegalArgumentException("bad g->status in ready");
         }
         gp.casgstatus(G.Status.WAITING, G.Status.RUNNABLE);
         LockSupport.unpark(gp.th);

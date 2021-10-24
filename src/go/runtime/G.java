@@ -1,11 +1,8 @@
 package go.runtime;
 
-import go.builtin.channel.SudoG;
-
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.LockSupport;
 
 public class G {
 

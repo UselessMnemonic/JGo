@@ -1,4 +1,4 @@
-package go.builtin.tuple;
+package go.tuple;
 
 public class Quadruple<A, B, C, D> {
     public final A a;

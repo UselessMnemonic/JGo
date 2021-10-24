@@ -8,7 +8,7 @@ public class MutableString extends GoObject implements CharSequence {
     public static final GoClass goClass = GoClass.forBuiltin(MutableString.class);
 
     // The underlying data
-    private StringBuilder value;
+    private String value;
 
     /**
      * Constructs a default MutableString, whose value is the empty String.
@@ -23,13 +23,13 @@ public class MutableString extends GoObject implements CharSequence {
      */
     public MutableString(CharSequence value) {
         super(MutableString.goClass);
-        this.value = new StringBuilder(value);
+        this.value = value.toString();
     }
 
     // Private copy constructor
     private MutableString(MutableString other) {
         super(MutableString.goClass);
-        this.value = new StringBuilder(other.value);
+        this.value = other.value;
     }
 
     @Override
@@ -45,7 +45,7 @@ public class MutableString extends GoObject implements CharSequence {
      * @param other The MutableString whose value will be copied
      */
     public void assign(MutableString other) {
-        this.value = new StringBuilder(other.value);
+        this.value = other.value;
     }
 
     @Override

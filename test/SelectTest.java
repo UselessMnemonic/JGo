@@ -1,12 +1,7 @@
 import go.builtin.Int8;
 import go.builtin.channel.Case;
 import go.builtin.channel.Channel;
-import go.builtin.tuple.Couple;
-
-import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.locks.LockSupport;
+import go.tuple.Couple;
 
 public class SelectTest {
 

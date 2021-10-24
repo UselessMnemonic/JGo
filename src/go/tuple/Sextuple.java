@@ -1,4 +1,4 @@
-package go.builtin.tuple;
+package go.tuple;
 
 public class Sextuple<A, B, C, D, E, F> {
     public final A a;

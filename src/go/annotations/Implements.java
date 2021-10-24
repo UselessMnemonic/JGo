@@ -1,4 +1,4 @@
-package go.builtin.annotations;
+package go.annotations;
 
 /**
  * An annotation that marks a type as implementing a Go interface.

@@ -1,7 +1,5 @@
 package go.runtime;
 
-import go.builtin.channel.SudoG;
-
 import java.util.LinkedList;
 
 public class WaitQ extends LinkedList<SudoG> {

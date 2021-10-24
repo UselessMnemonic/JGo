@@ -1,8 +1,7 @@
-package go.builtin.channel;
+package go.runtime;
 
-import go.runtime.G;
+import go.builtin.channel.HChan;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SudoG {

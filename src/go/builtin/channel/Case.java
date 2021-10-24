@@ -1,9 +1,10 @@
 package go.builtin.channel;
 
 import go.builtin.GoObject;
-import go.builtin.tuple.Couple;
+import go.tuple.Couple;
 import go.runtime.G;
 import go.runtime.Proc;
+import go.runtime.SudoG;
 
 import java.util.Arrays;
 import java.util.SplittableRandom;

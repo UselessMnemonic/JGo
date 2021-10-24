@@ -3,7 +3,7 @@ package go.builtin.channel;
 import go.builtin.Bool;
 import go.builtin.GoClass;
 import go.builtin.GoObject;
-import go.builtin.tuple.Couple;
+import go.tuple.Couple;
 
 import java.util.Objects;
 
